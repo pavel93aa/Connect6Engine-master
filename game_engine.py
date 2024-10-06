@@ -1,8 +1,8 @@
-from defines import *
 from tools import *
 import sys
 from search_engine import SearchEngine
 import time
+
 
 class GameEngine:
     def __init__(self, name=Defines.ENGINE_NAME):
@@ -12,7 +12,7 @@ class GameEngine:
             else:
                 print(f"Too long Engine Name: {name}, should be less than: {Defines.MSG_LENGTH}")
         self.m_alphabeta_depth = 6
-        self.m_board = t = [ [0]*Defines.GRID_NUM for i in range(Defines.GRID_NUM)]
+        self.m_board = t = [[0] * Defines.GRID_NUM for i in range(Defines.GRID_NUM)]
         self.init_game()
         self.m_search_engine = SearchEngine()
         self.m_best_move = StoneMove()
@@ -44,24 +44,68 @@ class GameEngine:
         while True:
             msg = input().strip()
             log_to_file(msg)
+
+            # Print engine name
             if msg == "name":
                 print(f"name {self.m_engine_name}")
+
+            # Exit the game
             elif msg == "exit" or msg == "quit":
                 break
+
+            # Print board
             elif msg == "print":
                 print_board(self.m_board, self.m_best_move)
+
+            # Setting up VCF mode
             elif msg == "vcf":
                 self.m_vcf = True
             elif msg == "unvcf":
                 self.m_vcf = False
+
+            # Black to move
             elif msg.startswith("black"):
                 self.m_best_move = msg2move(msg[6:])
                 make_move(self.m_board, self.m_best_move, Defines.BLACK)
                 self.m_chess_type = Defines.BLACK
+
+                # Launch the function to determine the end of the game after black's move
+                result = is_game_over(self.m_board, self.m_best_move)
+                if result == Defines.BLACK:
+                    print("Black wins!")
+                    input("Press ENTER to end the game")
+                    break
+                elif result == Defines.WHITE:
+                    print("White wins!")
+                    input("Press ENTER to end the game")
+                    break
+                elif result == "draw":
+                    print("The game is a draw!")
+                    input("Press ENTER to end the game")
+                    break
+
+            # White to move
             elif msg.startswith("white"):
                 self.m_best_move = msg2move(msg[6:])
                 make_move(self.m_board, self.m_best_move, Defines.WHITE)
                 self.m_chess_type = Defines.WHITE
+
+                # Launch the function to determine the end of the game after white's move
+                result = is_game_over(self.m_board, self.m_best_move)
+                if result == Defines.BLACK:
+                    print("Black wins!")
+                    input("Press ENTER to end the game")
+                    break
+                elif result == Defines.WHITE:
+                    print("White wins!")
+                    input("Press ENTER to end the game")
+                    break
+                elif result == "draw":
+                    print("The game is a draw!")
+                    input("Press ENTER to end the game")
+                    break
+
+            # Next move (engine makes a move)
             elif msg == "next":
                 self.m_chess_type = self.m_chess_type ^ 3
                 if self.search_a_move(self.m_chess_type, self.m_best_move):
@@ -69,6 +113,23 @@ class GameEngine:
                     msg = f"move {move2msg(self.m_best_move)}"
                     print(msg)
                     flush_output()
+
+                    # Launch the game end detection function after the computer's turn
+                    result = is_game_over(self.m_board, self.m_best_move)
+                    if result == Defines.BLACK:
+                        print("Black wins!")
+                        input("Press ENTER to end the game")
+                        break
+                    elif result == Defines.WHITE:
+                        print("White wins!")
+                        input("Press ENTER to end the game")
+                        break
+                    elif result == "draw":
+                        print("The game is a draw!")
+                        input("Press ENTER to end the game")
+                        break
+
+            # New Black/White
             elif msg.startswith("new"):
                 self.init_game()
                 if msg[4:] == "black":
@@ -80,16 +141,40 @@ class GameEngine:
                     flush_output()
                 else:
                     self.m_chess_type = Defines.WHITE
+
+            # Opponent's move
             elif msg.startswith("move"):
                 self.m_best_move = msg2move(msg[5:])
                 make_move(self.m_board, self.m_best_move, self.m_chess_type ^ 3)
+
+                # Checking if the opponent has won
                 if is_win_by_premove(self.m_board, self.m_best_move):
                     print("We lost!")
+                    input("Press ENTER to end the game")
+                    break
+
+                # Computer's move
                 if self.search_a_move(self.m_chess_type, self.m_best_move):
                     msg = f"move {move2msg(self.m_best_move)}"
                     make_move(self.m_board, self.m_best_move, self.m_chess_type)
                     print(msg)
                     flush_output()
+
+                    # Launch the function to determine the end of the game after the computer's move
+                    result = is_game_over(self.m_board, self.m_best_move)
+                    if result == Defines.BLACK:
+                        print("Black wins!")
+                        input("Press ENTER to end the game")
+                        break
+                    elif result == Defines.WHITE:
+                        print("White wins!")
+                        input("Press ENTER to end the game")
+                        break
+                    elif result == "draw":
+                        print("The game is a draw!")
+                        input("Press ENTER to end the game")
+                        break
+
             elif msg.startswith("depth"):
                 d = int(msg[6:])
                 if 0 < d < 10:
@@ -106,7 +191,8 @@ class GameEngine:
 
         start = time.perf_counter()
         self.m_search_engine.before_search(self.m_board, self.m_chess_type, self.m_alphabeta_depth)
-        score = self.m_search_engine.alpha_beta_search(self.m_alphabeta_depth, Defines.MININT, Defines.MAXINT, ourColor, bestMove, bestMove)
+        score = self.m_search_engine.alpha_beta_search(self.m_alphabeta_depth, Defines.MININT, Defines.MAXINT, ourColor,
+                                                       bestMove, bestMove)
         end = time.perf_counter()
 
         print(f"AB Time:\t{end - start:.3f}")
@@ -114,8 +200,10 @@ class GameEngine:
         print(f"Score:\t{score:.3f}")
         return True
 
+
 def flush_output():
     sys.stdout.flush()
+
 
 # Create an instance of GameEngine and run the game
 if __name__ == "__main__":
